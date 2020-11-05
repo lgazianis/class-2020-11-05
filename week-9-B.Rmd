@@ -33,9 +33,23 @@ week_9 <- kenya %>%
 
 * Write the math for this model.
 
+$$regch_1 = \beta treatment_1 + \beta poverty_n + \beta treatment + \beta poverty_n + \beta_0$$
+
 * Describe the population for which you are creating the model.
 
 * Fit the  model and interpret the coefficients. Focus on the coefficient of the interaction term.
+
+```{r}
+
+week9_model <- stan_glm(data = week_9,
+         reg_chg ~ treatment + poverty_n + poverty_n*treatment,
+         refresh = 0) %>%
+print(digits = 5)
+
+```
+
+Interpret coefficients:
+
 
 
 
@@ -49,10 +63,34 @@ week_9 <- kenya %>%
 Write a sentence or two for each of these topics:
 
 * What would Wisdom suggest about the use of the `kenya` data to answer this question?
-
+Due to the fact that we are not considering 4 years of difference, we may not be
+able to answer this question with great precision.
 * Describe the ideal Preceptor Table.
-
+In an ideal Preceptor Table, we would be able to see the values for each data
+point, including both treatment and control. 
 * Graph the posterior probability distribution `reg_chg` if polling station 007/001 were to be assigned treatment in January.
+
+```{r}
+
+station2020 <- tibble(treatment = "local",
+                      poverty_n = -1.60835093)
+
+histogram_station <- posterior_predict(week9_model, newdata = station2020) %>%
+  as_tibble()
+
+histogram_station %>%
+  ggplot(aes(x = `1`)) + 
+  geom_histogram(aes(y = after_stat(count/sum(count))),
+                 bins = 100, 
+                 alpha = .5,
+                 position = "identity") + 
+  labs(title = "Posterior Distribution for Registration Change in 007/001",
+       x = "Registration Change", y = "Probability")
+
+sum(histogram_station$`1` > 0.04) / length(histogram_station$`1`)
+
+```
+
 
 * Answer the President's question.
 
@@ -69,4 +107,11 @@ Write a sentence or two for each of these topics:
 Using the model which you created in Scene 1, create a graphic of the posterior probability distribution of the causal effect of `local` treatment in polling stations which have +2 sigma poverty rates. Note that there are two ways to do this. First, we can use a parameter approach. This is what we did in class last week. Second, we can use `posterior_epred()`, which is generally easier since it does the math for us. Use the `posterior_epred()` approach. 
 
 
+```{r}
+
+week9_model %>%
+  as_tibble() %>%
+  mutate(local_sigma = treatmentlocal + 2*sigma)
+
+```
 
